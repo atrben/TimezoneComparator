@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timezone & Shift Calculator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Timezone & Shift Calculator</h1>
+        <button onclick="resetAll()" style="float: right; font-size: 0.8em; padding: 5px 10px; background-color: #ff6347; color: white; border: none; cursor: pointer;">Reset All</button>
+        <button onclick="toggleTheme()" style="float: right; font-size: 0.8em; padding: 5px 10px; background-color: #808080; color: white; border: none; cursor: pointer; margin-right: 10px;">Toggle Theme</button>
+        <button onclick="showInstructions()" style="float: right; font-size: 0.8em; padding: 5px 10px; background-color: #A9A9A9; color: white; border: none; cursor: pointer; margin-right: 10px;">Instructions</button>
+        
+        <div class="input-section">
+            <h2>Compare Timezones</h2>
+            <div class="input-group">
+                <label for="base_timezone">Base Timezone:</label>
+                <select id="base_timezone" name="base_timezone">
+                    {% for tz in timezones %}
+                        <option value="{{ tz }}">{{ abbr(tz) }} ({{ tz }})</option>
+                    {% endfor %}
+                </select>
+                <input type="text" id="manual_timezone" placeholder="Or enter manually (e.g., US/Pacific)">
+            </div>
+            <div class="input-group base-time-group">
+                <label for="base_time">Base Time (HH:MM):</label>
+                <input type="time" id="base_time" name="base_time" style="vertical-align: middle;">
+                <button onclick="setLocalTime()" style="font-size: 0.8em; padding: 5px 10px; margin-left: 10px; vertical-align: middle;">Use My Local Time</button>
+            </div>
+            <div class="input-group">
+                <label for="custom_timezones">Timezones to Compare (comma-separated, or stacked):</label>
+                <textarea id="custom_timezones" placeholder="PST, EST, GMT (leave blank for common timezones)" rows="3" style="width: 100%;"></textarea>
+            </div>
+            <button type="submit" id="compare-btn" class="btn btn-primary">Compare & Calculate</button>
+        </div>
+
+        <div class="results-section" id="comparison_results">
+            <h2>Comparison Results</h2>
+            <table id="results_table">
+                <thead>
+                    <tr>
+                        <th>Abbreviation</th>
+                        <th>Timezone</th>
+                        <th>Time Difference (hrs)</th>
+                        <th>Local Time</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Results will be populated here -->
+                </tbody>
+            </table>
+            <button id="export_comparison_btn" onclick="exportComparisonResults()" disabled>Export to CSV</button>
+        </div>
+
+        <div class="input-section">
+            <!-- Removed Shift Hours Calculator header to avoid redundancy -->
+        </div>
+
+        <div class="results-section" id="shift_results">
+            <h2>Shift Hours Results</h2>
+            <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 20px;">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="toggle_time_unit" onchange="toggleTimeUnit()">
+                    <label for="toggle_time_unit" style="width: auto;">Show in Minutes</label>
+                </div>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="toggle_total_count" onchange="toggleTotalCount()">
+                    <label for="toggle_total_count" style="width: auto;">Total by Count</label>
+                </div>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="hide_shift_ended" onchange="toggleHideShiftEnded()">
+                    <label for="hide_shift_ended" style="width: auto;">Hide Shift Ended</label>
+                </div>
+            </div>
+            <table id="shift_table">
+                <thead>
+                    <tr>
+                        <th>Abbreviation</th>
+                        <th>Timezone</th>
+                        <th>Hours Left in Shift</th>
+                        <th>Shift End Time</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Shift results will be populated here -->
+                </tbody>
+            </table>
+            <button id="export_shift_btn" onclick="exportShiftResults()" disabled>Export Shift Hours to CSV</button>
+        </div>
+
+        <div class="results-section" id="lead_time_section">
+            <h2>Expected Lead Time Calculator</h2>
+            <div class="input-group">
+                <label for="task_duration">Task Duration (minutes):</label>
+                <input type="number" id="task_duration" name="task_duration" min="1" value="60">
+            </div>
+            <div class="input-group">
+                <label for="productivityRate">Productivity Rate (%):</label>
+                <input type="number" id="productivityRate" name="productivityRate" value="70" min="0" max="100" required>
+            </div>
+            <button onclick="calculateTaskProduction()">Calculate Task Production</button>
+            <div id="task_production_results">
+                <h3>Task Production Results</h3>
+                <p>Total Available Minutes: <span id="total_minutes">0</span></p>
+                <p>Tasks per Team Member: <span id="tasks_per_member">0</span></p>
+                <p>Total Tasks Team Can Produce: <span id="total_tasks">0</span></p>
+                <h3>Math Breakdown</h3>
+                <p id="math_breakdown">Enter task duration and calculate to see the breakdown.</p>
+                <button id="export_lead_time_btn" onclick="exportLeadTimeResults()" disabled>Export Lead Time to CSV</button>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group base-time-group">
+                <label for="shift_base_time">Base Time (optional, defaults to current time):</label>
+                <input type="time" id="shift_base_time" name="shift_base_time" placeholder="HH:MM">
+            </div>
+        </div>
+
+        <div class="download-section">
+            <h2>View Tool Code</h2>
+            <button onclick="showCodePasswordPrompt()" style="background-color: #808080; color: white; border: none; padding: 8px 16px; font-size: 0.9em; cursor: pointer; border-radius: 4px;">View Code</button>
+        </div>
+    </div>
+    <div id="instructionsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeInstructions()">&times;</span>
+            <h2>Instructions for Timezone & Shift Calculator</h2>
+            <p>This tool is designed to help you compare timezones, calculate remaining shift hours, and estimate task production based on available time. Below is an overview of each section and how they connect:</p>
+            <h3>1. Compare Timezones</h3>
+            <p><strong>Purpose:</strong> This section allows you to see the time differences and local times across multiple timezones relative to a base timezone and time.</p>
+            <p><strong>Data Input:</strong> You provide a base timezone (selected or manually entered), an optional base time (defaults to current time), and a list of timezones to compare (comma-separated or stacked abbreviations, defaults to common timezones if blank).</p>
+            <p><strong>Output:</strong> A table showing the abbreviation, full timezone name, time difference in hours, local time, and count of occurrences for each timezone.</p>
+            <p><strong>Connection:</strong> The base timezone and time inputs from this section are used as the reference point for calculations in the Shift Hours Calculator. The list of timezones to compare also feeds into the Shift Hours Calculator to determine remaining shift time for the same set of locations.</p>
+            
+            <h3>2. Shift Hours Calculator</h3>
+            <p><strong>Purpose:</strong> This section calculates how many hours are left in a standard 8-hour shift (capped at 8 hours due to a 30-minute lunch break) for each timezone, assuming a shift from 9:00 AM to 5:30 PM local time.</p>
+            <p><strong>Data Input:</strong> It uses the same base timezone, base time, and list of timezones to compare as provided in the Compare Timezones section.</p>
+            <p><strong>Output:</strong> A table displaying the abbreviation, timezone, hours left in shift (or minutes if toggled), shift end time in base timezone, and count. Options allow toggling between hours/minutes, totaling by count, or hiding ended shifts.</p>
+            <p><strong>Connection:</strong> The shift hours data (specifically the available minutes per timezone and count of team members) directly feeds into the Expected Lead Time Calculator to estimate task production based on remaining shift time across all team members.</p>
+            
+            <h3>3. Expected Lead Time Calculator</h3>
+            <p><strong>Purpose:</strong> This section estimates how many tasks a team can complete based on the total available shift minutes across all timezones and the duration of a single task.</p>
+            <p><strong>Data Input:</strong> It takes the total available minutes from the Shift Hours Calculator results (summed across all team members in all timezones), a user-entered task duration in minutes, and a productivity rate percentage (defaulting to 70%) to account for breaks and other downtime.</p>
+            <p><strong>Output:</strong> Results show total available minutes, average tasks per team member, total tasks the team can produce after applying the productivity rate, and a detailed math breakdown of the calculations.</p>
+            <p><strong>Connection:</strong> This section builds on the Shift Hours Calculator by using the calculated remaining shift minutes to provide actionable insights on productivity and task completion capacity.</p>
+            
+            <h3>Data Flow Summary</h3>
+            <p>The inputs (base timezone, base time, and timezones to compare) start in Compare Timezones, feed into Shift Hours Calculator to determine remaining shift time, and finally, the total available minutes from Shift Hours Calculator are used by Expected Lead Time Calculator to estimate task production when a task duration is provided. Each section builds on the previous one to offer a comprehensive tool for managing distributed teams across timezones.</p>
+        </div>
+    </div>
+    <div id="downloadPasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDownloadPasswordPrompt()">&times;</span>
+            <h2>Enter Password to Download</h2>
+            <p>Please enter the password to access the tool assets:</p>
+            <input type="password" id="downloadPassword" placeholder="Enter password" style="width: 100%; padding: 8px; margin: 10px 0;">
+            <button onclick="checkDownloadPassword()" style="background-color: #3498db; color: white; border: none; padding: 8px 16px; font-size: 0.9em; cursor: pointer; border-radius: 4px;">Submit</button>
+            <p id="passwordError" style="color: red; display: none;">Incorrect password. Please try again.</p>
+        </div>
+    </div>
+    <div id="codePasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCodePasswordPrompt()">&times;</span>
+            <h2>Enter Password to View Code</h2>
+            <p>Please enter the password to access the tool code:</p>
+            <input type="password" id="codePassword" placeholder="Enter password" style="width: 100%; padding: 8px; margin: 10px 0;">
+            <button onclick="checkCodePassword()" style="background-color: #3498db; color: white; border: none; padding: 8px 16px; font-size: 0.9em; cursor: pointer; border-radius: 4px;">Submit</button>
+            <p id="codePasswordError" style="color: red; display: none;">Incorrect password. Please try again.</p>
+        </div>
+    </div>
+    <div id="codeModal" class="modal">
+        <div class="modal-content" style="width: 90%; max-width: 900px; height: 80vh; overflow-y: auto;">
+            <span class="close" onclick="closeCodeModal()">&times;</span>
+            <h2>Timezone & Shift Calculator Code</h2>
+            <p>Below is the complete code for this tool. You can copy and share it with your team for development purposes.</p>
+            <div id="codeContent" style="background-color: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; font-family: monospace;"></div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
